@@ -1,0 +1,14 @@
+
+th4-n8n/vol/cass*/data
+
+th4-n8n/vol/elasticsearch
+
+th4-n8n/vol/n8n/.n8n
+
+th4-n8n/vol/postgres
+
+th4-n8n/vol/ssl/nginx*
+
+th4-n8n/vol/thehive/data
+th4-n8n/vol/thehive/db
+th4-n8n/vol/thehive/index

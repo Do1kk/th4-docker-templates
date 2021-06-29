@@ -1,0 +1,191 @@
+version: '3.8'
+services:
+
+  nginx:
+    container_name: nginx
+    hostname: nginx
+    image: nginx:1.19.5
+    ports:
+      - 80:80
+      - 443:443
+      - 2443:2443
+      - 8765:8765
+    networks:
+      - proxy
+    volumes:
+      - ./vol/nginx:/etc/nginx/conf.d
+      - ./vol/ssl:/etc/ssl
+    restart: unless-stopped
+
+  elasticsearch:
+    image: 'elasticsearch:7.13.2'
+    container_name: elasticsearch
+    restart: unless-stopped
+    ports:
+      - '0.0.0.0:9200:9200'
+    environment:
+      - http.host=0.0.0.0
+      - discovery.type=single-node
+      - cluster.name=hive
+      - script.allowed_types= inline
+      - thread_pool.search.queue_size=100000
+      - thread_pool.write.queue_size=10000
+      - gateway.recover_after_nodes=1
+      - xpack.security.enabled=false
+      - bootstrap.memory_lock=true
+      - ES_JAVA_OPTS=-Xms128m -Xmx128m # min 128m
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - './vol/elasticsearch/data:/usr/share/elasticsearch/data'
+      - './vol/elasticsearch/logs:/usr/share/elasticsearch/logs'
+    networks:
+      - backend
+  cortex:
+    image: 'thehiveproject/cortex:latest'
+    container_name: cortex
+    restart: unless-stopped
+    command:
+      --job-directory ${JOB_DIRECTORY}
+    environment:
+      - 'JOB_DIRECTORY=${JOB_DIRECTORY}'
+    volumes:
+      - './vol/cortex/application.conf:/etc/cortex/application.conf'
+      - '${JOB_DIRECTORY}:${JOB_DIRECTORY}'
+      - '/var/run/docker.sock:/var/run/docker.sock'
+    depends_on:
+      - elasticsearch
+    ports:
+      - '0.0.0.0:9001:9001'
+    networks:
+      - backend
+      - proxy 
+
+  postgres:
+    image: postgres
+    container_name: PostgresDB
+    restart: unless-stopped
+    environment:
+      - 'POSTGRES_USER=${POSTGRES_USER}'
+      - 'POSTGRES_PASSWORD=${POSTGRES_PASSWORD}'
+      - 'POSTGRES_DB=${POSTGRES_DB}'
+    volumes:
+      - './vol/postgres/data:/var/lib/postgresql/data'
+    networks:
+      - n8n-net
+  n8n:
+    image: n8nio/n8n
+    container_name: n8n
+    restart: unless-stopped
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - 'DB_POSTGRESDB_DATABASE=${POSTGRES_DB}'
+      - 'DB_POSTGRESDB_USER=${POSTGRES_USER}'
+      - 'DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}'
+      - 'N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE}'
+      - 'N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}'
+      - 'N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}'
+    ports:
+      - '0.0.0.0:5678:5678'
+    links:
+      - postgres
+    volumes:
+      - './vol/n8n/.n8n:/root/.n8n'
+      - './vol/n8n/workflows:/opt/workflows'
+    networks:
+      - n8n-net
+      - default
+      - proxy
+    command: n8n start
+
+  cass1:
+    image: 'cassandra:3.11'
+    container_name: cass1
+    restart: unless-stopped
+    hostname: cass1
+    healthcheck: &healthcheck
+        test: ["CMD", "cqlsh", "-e", "describe keyspaces" ]
+        interval: 15s # domyślnie 5s
+        timeout: 50s # domyślnie 5s
+        retries: 10 # domyślnie 60
+    environment: &environment    # Declare and save environments variables into "environment"
+      CASSANDRA_SEEDS: "cass1,cass2"    # The first two nodes will be seeds
+      MAX_HEAP_SIZE: 256M # min 256M
+      HEAP_NEWSIZE: 128M
+      CASSANDRA_CLUSTER_NAME: thp
+      CASSANDRA_NUM_TOKENS: 128
+      CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch      
+    ports:
+      - '9042:9042'  # Expose native binary CQL port for your apps
+    volumes:
+      - './vol/cass1/data:/var/lib/cassandra/data'
+      - './vol/cass1/etc:/etc/cassandra'
+    networks:
+      - backend
+
+  cass2:
+    image: 'cassandra:3.11'
+    container_name: cass2
+    restart: unless-stopped
+    hostname: cass2
+    healthcheck: *healthcheck
+    environment: *environment    # point to "environment" to use the same environment variables as cass1
+    ports:
+      - '9043:9042'  # Expose native binary CQL port for your apps
+    volumes:
+      - './vol/cass2/data:/var/lib/cassandra/data'
+      - './vol/cass2/etc:/etc/cassandra'
+    networks:
+      - backend
+    depends_on:
+      cass1: # start cass2 only after cass1 is healthy
+        condition: service_healthy
+
+  cass3:
+    image: 'cassandra:3.11'
+    container_name: cass3
+    restart: unless-stopped
+    hostname: cass3
+    healthcheck: *healthcheck
+    environment: *environment    # point to "environment" to use the same environment variables as cass1
+    ports:
+      - '9044:9042'  # Expose native binary CQL port for your apps
+    volumes:
+      - './vol/cass3/data:/var/lib/cassandra/data'
+      - './vol/cass3/etc:/etc/cassandra'
+    networks:
+      - backend
+    depends_on:
+      cass2: # start cass3 only after cass2 is healthy
+        condition: service_healthy
+
+  thehive:
+    image: 'thehiveproject/thehive4:latest'
+    container_name: 'thehive4'
+    restart: unless-stopped
+    depends_on:
+      - cass1
+      - cass2
+      - cass3
+    ports:
+      - '0.0.0.0:9000:9000'
+    volumes:
+      - './vol/thehive/application.conf:/etc/thehive/application.conf'
+      - './vol/thehive/db:/opt/thp/thehive/db'
+      - './vol/thehive/data:/opt/thp/thehive/data'
+      - './vol/thehive/index:/opt/thp/thehive/index'
+    networks:
+      - default
+      - proxy
+      - backend
+    command: '--no-config --no-config-secret'
+networks:
+  n8n-net: null
+  default: null
+  backend:
+  proxy:
+    external: true
