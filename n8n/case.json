@@ -1,0 +1,245 @@
+{
+  "name": "Tworzenie case-ów z starego alertu z petla",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "case",
+        "operation": "create",
+        "title": "OLD",
+        "description": "Tworzenie case-a z starych alertów",
+        "severity": 1,
+        "startDate": "={{Date.now()\n}}",
+        "owner": "test1",
+        "flag": true,
+        "tlp": 0,
+        "tags": "OLD ",
+        "options": {
+          "summary": "test1"
+        }
+      },
+      "name": "TheHive",
+      "type": "n8n-nodes-base.theHive",
+      "typeVersion": 1,
+      "position": [
+        500,
+        530
+      ],
+      "credentials": {
+        "theHiveApi": "test"
+      }
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {}
+          ]
+        }
+      },
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        210,
+        470
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "merge",
+        "id": "={{$json[\"id\"]}}",
+        "caseId": "={{$node[\"TheHive\"].json[\"caseId\"]}}"
+      },
+      "name": "TheHive1",
+      "type": "n8n-nodes-base.theHive",
+      "typeVersion": 1,
+      "position": [
+        870,
+        200
+      ],
+      "credentials": {
+        "theHiveApi": "test"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 1,
+        "options": {
+          "sort": ""
+        },
+        "filters": {
+          "follow": true,
+          "tags": "={{$node[\"FunctionItem1\"].json[\"field\"]}}"
+        }
+      },
+      "name": "TheHive2",
+      "type": "n8n-nodes-base.theHive",
+      "typeVersion": 1,
+      "position": [
+        670,
+        520
+      ],
+      "credentials": {
+        "theHiveApi": "test"
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Code here will run once per input item.\n// More info and help: https://docs.n8n.io/nodes/n8n-nodes-base.functionItem\n\n// Add a new field called 'myNewField' to the JSON of the item\nvar d = new Date();\nd. setDate(d. getDate() - 3);\nvar curr_date = d.getDate();\nvar curr_month = d.getMonth() + 1; //Months are zero based\nvar curr_year = d.getFullYear();\nitem.field = curr_date + \"-\" + curr_month + \"-\" + curr_year\n// You can write logs to the browser console\nconsole.log('Done!');\n\nreturn item;"
+      },
+      "name": "FunctionItem1",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        350,
+        500
+      ],
+      "notes": "Podanie odpowiedniej daty"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "id": "={{$json[\"_id\"]}}",
+        "updateFields": {
+          "follow": true
+        }
+      },
+      "name": "TheHive3",
+      "type": "n8n-nodes-base.theHive",
+      "typeVersion": 1,
+      "position": [
+        720,
+        160
+      ],
+      "credentials": {
+        "theHiveApi": "test"
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {}
+          ]
+        }
+      },
+      "name": "IF",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        820,
+        520
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "NoOp",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        980,
+        550
+      ]
+    }
+  ],
+  "connections": {
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "FunctionItem1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FunctionItem1": {
+      "main": [
+        [
+          {
+            "node": "TheHive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TheHive": {
+      "main": [
+        [
+          {
+            "node": "TheHive2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TheHive2": {
+      "main": [
+        [
+          {
+            "node": "IF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TheHive3": {
+      "main": [
+        [
+          {
+            "node": "TheHive1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF": {
+      "main": [
+        [
+          {
+            "node": "TheHive3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "NoOp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TheHive1": {
+      "main": [
+        [
+          {
+            "node": "TheHive2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "id": "7"
+}

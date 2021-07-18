@@ -1,0 +1,138 @@
+{
+  "name": "Tworzenie alertu",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "title": "test1",
+        "description": "test1",
+        "date": "={{Date.now()}}",
+        "tags": "={{$json[\"field\"]}}",
+        "type": "test1",
+        "source": "test1",
+        "sourceRef": "={{$node[\"FunctionItem\"].json[\"myNewField\"]}}",
+        "artifactUi": {
+          "artifactValues": [
+            {
+              "dataType": "other",
+              "data": "8.8.8.8",
+              "message": "test artefaktów"
+            },
+            {
+              "dataType": "fqdn",
+              "data": "google.com"
+            },
+            {
+              "dataType": "other",
+              "data": "={{(Math.floor(Math.random() * 255) + 1)}}.{{(Math.floor(Math.random() * 255))}}.{{(Math.floor(Math.random() * 255) + 1)}}.{{(Math.floor(Math.random() * 255))}}"
+            }
+          ]
+        },
+        "additionalFields": {}
+      },
+      "name": "TheHive",
+      "type": "n8n-nodes-base.theHive",
+      "typeVersion": 1,
+      "position": [
+        790,
+        470
+      ],
+      "credentials": {
+        "theHiveApi": "test"
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Code here will run once per input item.\n// More info and help: https://docs.n8n.io/nodes/n8n-nodes-base.functionItem\n\n// Add a new field called 'myNewField' to the JSON of the item\nnumber = Math.floor(Math.random() * 90000000) + 10000000;\nitem.myNewField = number.toString()\n\n// You can write logs to the browser console\nconsole.log('Done!');\n\nreturn item;"
+      },
+      "name": "FunctionItem",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        610,
+        470
+      ],
+      "notes": "Tworzenie numeru dla danego alertu"
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        250,
+        470
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Code here will run once per input item.\n// More info and help: https://docs.n8n.io/nodes/n8n-nodes-base.functionItem\n\n// Add a new field called 'myNewField' to the JSON of the item\nvar d = new Date();\nvar curr_date = d.getDate();\nvar curr_month = d.getMonth() + 1; //Months are zero based\nvar curr_year = d.getFullYear();\nitem.field = curr_date + \"-\" + curr_month + \"-\" + curr_year\n// You can write logs to the browser console\nconsole.log('Done!');\n\nreturn item;"
+      },
+      "name": "FunctionItem1",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        420,
+        470
+      ],
+      "notes": "Podanie odpowiedniej daty"
+    }
+  ],
+  "connections": {
+    "FunctionItem": {
+      "main": [
+        [
+          {
+            "node": "TheHive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "FunctionItem1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FunctionItem1": {
+      "main": [
+        [
+          {
+            "node": "FunctionItem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "timezone": "Europe/Warsaw"
+  },
+  "id": "2"
+}

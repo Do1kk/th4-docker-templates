@@ -4,7 +4,7 @@ services:
   nginx:
     container_name: nginx
     hostname: nginx
-    image: nginx:1.19.5
+    image: nginx:1.21.1-alpine
     ports:
       - 80:80
       - 443:443
@@ -44,7 +44,7 @@ services:
     networks:
       - backend
   cortex:
-    image: 'thehiveproject/cortex:latest'
+    image: 'thehiveproject/cortex:3.1.1'
     container_name: cortex
     restart: unless-stopped
     command:
@@ -64,7 +64,7 @@ services:
       - proxy 
 
   postgres:
-    image: postgres
+    image: postgres:alpine3.14
     container_name: PostgresDB
     restart: unless-stopped
     environment:
@@ -76,7 +76,7 @@ services:
     networks:
       - n8n-net
   n8n:
-    image: n8nio/n8n
+    image: n8nio/n8n:0.129.0
     container_name: n8n
     restart: unless-stopped
     environment:
@@ -103,68 +103,89 @@ services:
     command: n8n start
 
   cass1:
-    image: 'cassandra:3.11'
+    image: 'cassandra:3.11.10'
     container_name: cass1
     restart: unless-stopped
     hostname: cass1
     healthcheck: &healthcheck
         test: ["CMD", "cqlsh", "-e", "describe keyspaces" ]
-        interval: 15s # domyślnie 5s
-        timeout: 50s # domyślnie 5s
-        retries: 10 # domyślnie 60
-    environment: &environment    # Declare and save environments variables into "environment"
+        interval: 10s # domyślnie 5s
+        timeout: 10s # domyślnie 5s
+        retries: 6 # domyślnie 60
+    environment:
       CASSANDRA_SEEDS: "cass1,cass2"    # The first two nodes will be seeds
-      MAX_HEAP_SIZE: 256M # min 256M
-      HEAP_NEWSIZE: 128M
+      MAX_HEAP_SIZE: 1G # min 256M
+      HEAP_NEWSIZE: 200M
       CASSANDRA_CLUSTER_NAME: thp
       CASSANDRA_NUM_TOKENS: 128
       CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch      
+      CASSANDRA_DC: test_DC
+      CASSANDRA_RACK: RACK1  # Cassandra not have more than one replica on the same rack
     ports:
       - '9042:9042'  # Expose native binary CQL port for your apps
+      - '7000:7000'  # Inter-node cluster communication port.
     volumes:
       - './vol/cass1/data:/var/lib/cassandra/data'
 #      - './vol/cass1/etc:/etc/cassandra'
     networks:
-      - backend
+      - cassandra
 
   cass2:
-    image: 'cassandra:3.11'
+    image: 'cassandra:3.11.10'
     container_name: cass2
     restart: unless-stopped
     hostname: cass2
     healthcheck: *healthcheck
-    environment: *environment    # point to "environment" to use the same environment variables as cass1
+    environment: 
+      CASSANDRA_SEEDS: "cass1,cass2"    # The first two nodes will be seeds
+      MAX_HEAP_SIZE: 1G # min 256M
+      HEAP_NEWSIZE: 200M
+      CASSANDRA_CLUSTER_NAME: thp
+      CASSANDRA_NUM_TOKENS: 128
+      CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+      CASSANDRA_DC: test_DC
+      CASSANDRA_RACK: RACK2
     ports:
       - '9043:9042'  # Expose native binary CQL port for your apps
+      - '7001:7000'  # Inter-node cluster communication port.
     volumes:
       - './vol/cass2/data:/var/lib/cassandra/data'
 #      - './vol/cass2/etc:/etc/cassandra'
     networks:
-      - backend
+      - cassandra
     depends_on:
       cass1: # start cass2 only after cass1 is healthy
         condition: service_healthy
 
   cass3:
-    image: 'cassandra:3.11'
+    image: 'cassandra:3.11.10'
     container_name: cass3
     restart: unless-stopped
     hostname: cass3
     healthcheck: *healthcheck
-    environment: *environment    # point to "environment" to use the same environment variables as cass1
+    environment: 
+      CASSANDRA_SEEDS: "cass1,cass2"    # The first two nodes will be seeds
+      MAX_HEAP_SIZE: 1G # min 256M
+      HEAP_NEWSIZE: 200M
+      CASSANDRA_CLUSTER_NAME: thp
+      CASSANDRA_NUM_TOKENS: 128
+      CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+      CASSANDRA_DC: test_DC
+      CASSANDRA_RACK: RACK3
     ports:
       - '9044:9042'  # Expose native binary CQL port for your apps
+      - '7002:7000'
     volumes:
       - './vol/cass3/data:/var/lib/cassandra/data'
-#      - './vol/cass3/etc:/etc/cassandra'
+ #      - './vol/cass3/etc:/etc/cassandra'
     networks:
-      - backend
+      - cassandra
     depends_on:
       cass2: # start cass3 only after cass2 is healthy
         condition: service_healthy
 
   thehive:
-    image: 'thehiveproject/thehive4:latest'
+    image: 'thehiveproject/thehive4:4.1.7'
     container_name: 'thehive4'
     restart: unless-stopped
     depends_on:
@@ -181,11 +202,13 @@ services:
     networks:
       - default
       - proxy
+      - cassandra
       - backend
     command: '--no-config --no-config-secret'
 networks:
   n8n-net: null
   default: null
-  backend:
+  cassandra: null
+  backend: null
   proxy:
     external: true
