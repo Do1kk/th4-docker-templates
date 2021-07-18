@@ -123,7 +123,7 @@ services:
       - '9042:9042'  # Expose native binary CQL port for your apps
     volumes:
       - './vol/cass1/data:/var/lib/cassandra/data'
-      - './vol/cass1/etc:/etc/cassandra'
+#      - './vol/cass1/etc:/etc/cassandra'
     networks:
       - backend
 
@@ -138,7 +138,7 @@ services:
       - '9043:9042'  # Expose native binary CQL port for your apps
     volumes:
       - './vol/cass2/data:/var/lib/cassandra/data'
-      - './vol/cass2/etc:/etc/cassandra'
+#      - './vol/cass2/etc:/etc/cassandra'
     networks:
       - backend
     depends_on:
@@ -156,7 +156,7 @@ services:
       - '9044:9042'  # Expose native binary CQL port for your apps
     volumes:
       - './vol/cass3/data:/var/lib/cassandra/data'
-      - './vol/cass3/etc:/etc/cassandra'
+#      - './vol/cass3/etc:/etc/cassandra'
     networks:
       - backend
     depends_on:
