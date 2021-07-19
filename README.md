@@ -1,6 +1,13 @@
 # Simple and functional thehive4 instance using docker compose
 
 
+### TheHive4 
+http://localhost
+### Cortex   
+http://localhost:2443
+### n8n      
+http://localhost:8765
+
 ## Before "docker up".
 ### 1. Update thehive.conf and cortex.conf files for nginx as appropriate.
 * Update server_name for your fqdn
@@ -16,6 +23,17 @@
 sudo chown -R 1000:1000 vol
 sudo chmod -R u+rwX,go+rX,go-w vol  # set directories to 755 but files to 644
 ```
+
+## Docker UP.
+### 1. Analyze docker-compose.yml and run all images.
+``` 
+docker-compose up -d
+```
+### 2. New file will be created.
+```
+sudo chmod -R u+rwX,go+rX,go-w vol
+```
+
 
 ## Cassandra.
 ### 1. Check cassandra cluster.
