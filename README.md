@@ -2,11 +2,11 @@
 
 
 ### TheHive4 
-http://localhost
+https://localhost
 ### Cortex   
-http://localhost:2443
+https://localhost:2443
 ### n8n      
-http://localhost:8765
+https://localhost:8765
 
 ## Before "docker up".
 ### 1. Update thehive.conf and cortex.conf files for nginx as appropriate.
