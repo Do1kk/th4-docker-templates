@@ -117,10 +117,10 @@ services:
       MAX_HEAP_SIZE: 1G # min 256M
       HEAP_NEWSIZE: 200M
       CASSANDRA_CLUSTER_NAME: thp
-      CASSANDRA_NUM_TOKENS: 128
-      CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch      
+      CASSANDRA_NUM_TOKENS: 128  # Virtual nodes. Machine with fewer resources could be configured to support a smaller number of virtual nodes.
+      CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch  # Topology information that the replication strategy uses to place replicas.     
       CASSANDRA_DC: test_DC
-      CASSANDRA_RACK: RACK1  # Cassandra not have more than one replica on the same rack
+      CASSANDRA_RACK: RACK1  # Cassandra do not have more than one replica on the same rack.
     ports:
       - '9042:9042'  # Expose native binary CQL port for your apps
       - '7000:7000'  # Inter-node cluster communication port.
