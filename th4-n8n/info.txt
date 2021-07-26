@@ -1,0 +1,26 @@
+# Check cassandra cluster
+docker exec cass1 nodetool status
+
+# Check cassandra claster description
+docker exec cass1 nodetool describecluster
+
+# access rights on 'vol' dir
+sudo chown -R 1000:1000 vol
+sudo chmod -R u+rwX,go+rX,go-w vol  # set directories to 755 but files to 644
+
+# Repair cassandra datacenter. https://docs.datastax.com/en/cassandra-oss/3.x/cassandra/tools/toolsRepair.html
+docker exec cass1 nodetool repair -dc test_DC # or docker exec cass1 nodetool repair
+
+# Cleans up keyspaces and partition keys no longer belonging to a node.
+docker exec cass1 nodetool cleanup  # clean all keyspace
+
+# Cassandra cluster with 3 nodes.
+# To edit and delete information in thehive4 with replication 3 two node must working. Adding information (np alerts) one node is enough.
+
+# Check CQL is working
+docker exec -it cass1   cqlsh  -e "describe keyspaces"
+
+# After change authenticator and authorizatizer in vol/cass*/etc/cassandra.yml - provide cassandra credentials.
+docker exec -it cass1  cqlsh -u cassandra -p cassandra -e "describe keyspaces"
+
+# Next step: backup and restore

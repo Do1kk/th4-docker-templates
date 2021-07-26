@@ -1,6 +1,5 @@
 version: '3.8'
 services:
-
   nginx:
     container_name: nginx
     hostname: nginx
@@ -76,7 +75,7 @@ services:
     networks:
       - n8n-net
   n8n:
-    image: n8nio/n8n:0.129.0
+    image: n8nio/n8n:0.130.0
     container_name: n8n
     restart: unless-stopped
     environment:
@@ -106,27 +105,31 @@ services:
     image: 'cassandra:3.11.10'
     container_name: cass1
     restart: unless-stopped
-    hostname: cass1
+    hostname: cass1 # now we can write this name in thehive confguration insted of ip that is randomly created
     healthcheck: &healthcheck
-        test: ["CMD", "cqlsh", "-e", "describe keyspaces" ]
+#        test: ["CMD", "cqlsh", "-e", "describe keyspaces" ] # without cridentials
+        test: ["CMD", "cqlsh", "-u", "${CASSANDRA_USER}", "-p", "${CASSANDRA_PASS}", "-e", "describe keyspaces" ]
         interval: 10s # domyślnie 5s
         timeout: 10s # domyślnie 5s
-        retries: 6 # domyślnie 60
+        retries: 10 # domyślnie 60
     environment:
       CASSANDRA_SEEDS: "cass1,cass2"    # The first two nodes will be seeds
-      MAX_HEAP_SIZE: 1G # min 256M
+      MAX_HEAP_SIZE: 1100M # min 256M
       HEAP_NEWSIZE: 200M
       CASSANDRA_CLUSTER_NAME: thp
       CASSANDRA_NUM_TOKENS: 128  # Virtual nodes. Machine with fewer resources could be configured to support a smaller number of virtual nodes.
       CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch  # Topology information that the replication strategy uses to place replicas.     
       CASSANDRA_DC: test_DC
       CASSANDRA_RACK: RACK1  # Cassandra do not have more than one replica on the same rack.
+      CASSANDRA_START_RPC: 'true'
     ports:
-      - '9042:9042'  # Expose native binary CQL port for your apps
-      - '7000:7000'  # Inter-node cluster communication port.
+      - '9042:9042'  # Expose native binary CQL port for your apps.
+#      - '7000:7000'  # Inter-node cluster communication port. # not esential after ssl encription on port 7001
+      - '7001:7001'  # SSL inter-node cluster communication.
     volumes:
       - './vol/cass1/data:/var/lib/cassandra/data'
-#      - './vol/cass1/etc:/etc/cassandra'
+      - './vol/cass1/cassandra.yaml:/etc/cassandra/cassandra.yaml'
+      - './vol/cert:/etc/cert' # folder with certificates for client and server encryption
     networks:
       - cassandra
 
@@ -138,19 +141,22 @@ services:
     healthcheck: *healthcheck
     environment: 
       CASSANDRA_SEEDS: "cass1,cass2"    # The first two nodes will be seeds
-      MAX_HEAP_SIZE: 1G # min 256M
+      MAX_HEAP_SIZE: 1100M # min 256M
       HEAP_NEWSIZE: 200M
       CASSANDRA_CLUSTER_NAME: thp
       CASSANDRA_NUM_TOKENS: 128
       CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
       CASSANDRA_DC: test_DC
       CASSANDRA_RACK: RACK2
+      CASSANDRA_START_RPC: 'true'
     ports:
-      - '9043:9042'  # Expose native binary CQL port for your apps
-      - '7001:7000'  # Inter-node cluster communication port.
+      - '9043:9042'
+#      - '7010:7000' 
+      - '7002:7001'
     volumes:
       - './vol/cass2/data:/var/lib/cassandra/data'
-#      - './vol/cass2/etc:/etc/cassandra'
+      - './vol/cass2/cassandra.yaml:/etc/cassandra/cassandra.yaml'
+      - './vol/cert:/etc/cert'
     networks:
       - cassandra
     depends_on:
@@ -165,19 +171,22 @@ services:
     healthcheck: *healthcheck
     environment: 
       CASSANDRA_SEEDS: "cass1,cass2"    # The first two nodes will be seeds
-      MAX_HEAP_SIZE: 1G # min 256M
+      MAX_HEAP_SIZE: 1100M # min 256M
       HEAP_NEWSIZE: 200M
       CASSANDRA_CLUSTER_NAME: thp
       CASSANDRA_NUM_TOKENS: 128
       CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
       CASSANDRA_DC: test_DC
       CASSANDRA_RACK: RACK3
+      CASSANDRA_START_RPC: 'true'
     ports:
-      - '9044:9042'  # Expose native binary CQL port for your apps
-      - '7002:7000'
+      - '9044:9042'
+#      - '7020:7000'
+      - '7003:7001'
     volumes:
       - './vol/cass3/data:/var/lib/cassandra/data'
- #      - './vol/cass3/etc:/etc/cassandra'
+      - './vol/cass3/cassandra.yaml:/etc/cassandra/cassandra.yaml'
+      - './vol/cert:/etc/cert'
     networks:
       - cassandra
     depends_on:
@@ -185,7 +194,7 @@ services:
         condition: service_healthy
 
   thehive:
-    image: 'thehiveproject/thehive4:4.1.7'
+    image: 'thehiveproject/thehive4:4.1.9'
     container_name: 'thehive4'
     restart: unless-stopped
     depends_on:
@@ -199,6 +208,7 @@ services:
       - './vol/thehive/db:/opt/thp/thehive/db'
       - './vol/thehive/data:/opt/thp/thehive/data'
       - './vol/thehive/index:/opt/thp/thehive/index'
+      - './vol/cert:/etc/cert'
     networks:
       - default
       - proxy

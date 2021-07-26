@@ -1,0 +1,55 @@
+# Change the replication class to NetworkTopologyStrategy and set the replication factor between 3 to 5
+# Every time you add or remove a datacenter, you must manually reconfigure the system_auth keyspace.
+
+# 1. Change file cassandra.yml
+authenticator: PasswordAuthenticator
+authorizer: CassandraAuthorizer
+
+# 2. Create an account and grant permissions on keyspace.
+docker exec -it cass1  cqlsh -u cassandra -p cassandra
+CREATE ROLE thehive WITH PASSWORD = 'thehive1234' AND LOGIN = true;
+GRANT ALL PERMISSIONS ON KEYSPACE thehive TO thehive; # when you run into a problem docker-compose down && docker-compose up -d
+
+ 
+# Server ssl. (node to node) (i can't configure client encryption but docker plus login and password to sqlsh is alredy secure)
+# 3. Edit end execute bash file fot creating certification.
+# setupkeys-cassandra-security.sh # source: https://dzone.com/articles/setting-up-a-cassandra-cluster-with-ssl
+
+# 4. Edit cassandra.yaml for server_encryption_options # source: https://dzone.com/articles/setting-up-a-cassandra-cluster-with-ssl
+server_encryption_options:
+    internode_encryption: all
+    keystore: /etc/cert/cassandra/cassandra.keystore # dir to file in docker
+    keystore_password: cassandra
+    truststore: /etc/cert/cassandra/cassandra.truststore # dir to file in docker
+    truststore_password: cassandra
+    # More advanced defaults below:
+    protocol: TLS
+
+# 4. Add dir of certification folder to cassandra.yaml file and docker-compose.yml
+
+# 5. Restart docker-compose (or docker-compose down && docker-compose up -d)
+
+# 6. Check that conection is working just fine (in some cases second and third node shudn't start because healthcehck wont pass)
+# Check cassandra cluster
+docker exec cass1 nodetool status
+
+# Check cassandra claster description
+docker exec cass1 nodetool describecluster
+
+# Schema versions should represent somthing like this (when 3 nodes in [] you will find 3 IP adresses)
+                xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxx: [192.168.x.x, 192.168.x.x, 192.168.x.x]
+
+
+
+
+
+
+
+(don't know is this will be helpfull)
+# 1. Change the system_auth keyspace RF
+ALTER KEYSPACE system_auth
+    WITH REPLICATION= {'class' : 'NetworkTopologyStrategy', 
+                       'test_DC' : 3}; # 3 is number of nodes
+
+# 2. Run the nodetool repair on the security keyspaces.
+docker exec -it cass1 nodetool repair system_auth
