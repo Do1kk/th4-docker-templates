@@ -13,3 +13,5 @@ th4-n8n/vol/ssl/nginx*
 th4-n8n/vol/thehive/data
 th4-n8n/vol/thehive/db
 th4-n8n/vol/thehive/index
+
+th4-n8n/vol/cert/cassandra/*
