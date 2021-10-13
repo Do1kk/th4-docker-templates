@@ -20,8 +20,6 @@ services:
     image: 'elasticsearch:7.13.2'
     container_name: elasticsearch
     restart: unless-stopped
-    ports:
-      - '0.0.0.0:9200:9200'
     environment:
       - http.host=0.0.0.0
       - discovery.type=single-node
@@ -56,8 +54,6 @@ services:
       - '/var/run/docker.sock:/var/run/docker.sock'
     depends_on:
       - elasticsearch
-    ports:
-      - '0.0.0.0:9001:9001'
     networks:
       - backend
       - proxy 
@@ -88,8 +84,6 @@ services:
       - 'N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE}'
       - 'N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}'
       - 'N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}'
-    ports:
-      - '0.0.0.0:5678:5678'
     links:
       - postgres
     volumes:
@@ -97,7 +91,6 @@ services:
       - './vol/n8n/workflows:/opt/workflows'
     networks:
       - n8n-net
-      - default
       - proxy
     command: n8n start
 
@@ -122,16 +115,12 @@ services:
       CASSANDRA_DC: test_DC
       CASSANDRA_RACK: RACK1  # Cassandra do not have more than one replica on the same rack.
       CASSANDRA_START_RPC: 'true'
-    ports:
-      - '9042:9042'  # Expose native binary CQL port for your apps.
-#      - '7000:7000'  # Inter-node cluster communication port. # not esential after ssl encription on port 7001
-      - '7001:7001'  # SSL inter-node cluster communication.
     volumes:
       - './vol/cass1/data:/var/lib/cassandra/data'
       - './vol/cass1/cassandra.yaml:/etc/cassandra/cassandra.yaml'
       - './vol/cert:/etc/cert' # folder with certificates for client and server encryption
     networks:
-      - cassandra
+      - backend
 
   cass2:
     image: 'cassandra:3.11.10'
@@ -149,16 +138,12 @@ services:
       CASSANDRA_DC: test_DC
       CASSANDRA_RACK: RACK2
       CASSANDRA_START_RPC: 'true'
-    ports:
-      - '9043:9042'
-#      - '7010:7000' 
-      - '7002:7001'
     volumes:
       - './vol/cass2/data:/var/lib/cassandra/data'
       - './vol/cass2/cassandra.yaml:/etc/cassandra/cassandra.yaml'
       - './vol/cert:/etc/cert'
     networks:
-      - cassandra
+      - backend
     depends_on:
       cass1: # start cass2 only after cass1 is healthy
         condition: service_healthy
@@ -179,16 +164,12 @@ services:
       CASSANDRA_DC: test_DC
       CASSANDRA_RACK: RACK3
       CASSANDRA_START_RPC: 'true'
-    ports:
-      - '9044:9042'
-#      - '7020:7000'
-      - '7003:7001'
     volumes:
       - './vol/cass3/data:/var/lib/cassandra/data'
       - './vol/cass3/cassandra.yaml:/etc/cassandra/cassandra.yaml'
       - './vol/cert:/etc/cert'
     networks:
-      - cassandra
+      - backend
     depends_on:
       cass2: # start cass3 only after cass2 is healthy
         condition: service_healthy
@@ -201,8 +182,6 @@ services:
       - cass1
       - cass2
       - cass3
-    ports:
-      - '0.0.0.0:9000:9000'
     volumes:
       - './vol/thehive/application.conf:/etc/thehive/application.conf'
       - './vol/thehive/db:/opt/thp/thehive/db'
@@ -210,15 +189,12 @@ services:
       - './vol/thehive/index:/opt/thp/thehive/index'
       - './vol/cert:/etc/cert'
     networks:
-      - default
       - proxy
-      - cassandra
       - backend
+      - n8n-net
     command: '--no-config --no-config-secret'
 networks:
   n8n-net: null
-  default: null
-  cassandra: null
   backend: null
   proxy:
     external: true
