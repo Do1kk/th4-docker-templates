@@ -27,7 +27,7 @@ sudo chmod -R u+rwX,go+rX,go-w vol  # set directories to 755 but files to 644
 ## Docker UP.
 ### 1. Analyze docker-compose.yml and run all images.
 ``` 
-docker-compose up -d
+sudo docker-compose up -d
 ```
 ### 2. New file will be created.
 ```
