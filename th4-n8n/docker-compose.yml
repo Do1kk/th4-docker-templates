@@ -3,7 +3,7 @@ services:
   nginx:
     container_name: nginx
     hostname: nginx
-    image: nginx:1.21.1-alpine
+    image: nginx:1.21.4
     ports:
       - 80:80
       - 443:443
@@ -17,14 +17,15 @@ services:
     restart: unless-stopped
 
   elasticsearch:
-    image: 'elasticsearch:7.13.2'
+    image: 'elasticsearch:7.16.1'
     container_name: elasticsearch
+    hostname: elasticsearch
     restart: unless-stopped
     environment:
       - http.host=0.0.0.0
       - discovery.type=single-node
       - cluster.name=hive
-      - script.allowed_types= inline
+      - script.allowed_types= inline,stored
       - thread_pool.search.queue_size=100000
       - thread_pool.write.queue_size=10000
       - gateway.recover_after_nodes=1
@@ -39,9 +40,10 @@ services:
       - './vol/elasticsearch/data:/usr/share/elasticsearch/data'
       - './vol/elasticsearch/logs:/usr/share/elasticsearch/logs'
     networks:
-      - backend
+      - th4
+      - es
   cortex:
-    image: 'thehiveproject/cortex:3.1.1'
+    image: 'thehiveproject/cortex:3.1.3-withdeps'
     container_name: cortex
     restart: unless-stopped
     command:
@@ -55,8 +57,9 @@ services:
     depends_on:
       - elasticsearch
     networks:
-      - backend
-      - proxy 
+      - es
+      - proxy
+      - th4
 
   postgres:
     image: postgres:alpine3.14
@@ -95,7 +98,7 @@ services:
     command: n8n start
 
   cass1:
-    image: 'cassandra:3.11.10'
+    image: 'cassandra:4.0.1'
     container_name: cass1
     restart: unless-stopped
     hostname: cass1 # now we can write this name in thehive confguration insted of ip that is randomly created
@@ -120,10 +123,10 @@ services:
       - './vol/cass1/cassandra.yaml:/etc/cassandra/cassandra.yaml'
       - './vol/cert:/etc/cert' # folder with certificates for client and server encryption
     networks:
-      - backend
+      - th4
 
   cass2:
-    image: 'cassandra:3.11.10'
+    image: 'cassandra:4.0.1'
     container_name: cass2
     restart: unless-stopped
     hostname: cass2
@@ -143,13 +146,13 @@ services:
       - './vol/cass2/cassandra.yaml:/etc/cassandra/cassandra.yaml'
       - './vol/cert:/etc/cert'
     networks:
-      - backend
+      - th4
     depends_on:
       cass1: # start cass2 only after cass1 is healthy
         condition: service_healthy
 
   cass3:
-    image: 'cassandra:3.11.10'
+    image: 'cassandra:4.0.1'
     container_name: cass3
     restart: unless-stopped
     hostname: cass3
@@ -169,13 +172,13 @@ services:
       - './vol/cass3/cassandra.yaml:/etc/cassandra/cassandra.yaml'
       - './vol/cert:/etc/cert'
     networks:
-      - backend
+      - th4
     depends_on:
       cass2: # start cass3 only after cass2 is healthy
         condition: service_healthy
 
   thehive:
-    image: 'thehiveproject/thehive4:4.1.9'
+    image: 'thehiveproject/thehive4:4.1.15'
     container_name: 'thehive4'
     restart: unless-stopped
     depends_on:
@@ -195,6 +198,7 @@ services:
     command: '--no-config --no-config-secret'
 networks:
   n8n-net: null
-  backend: null
+  th4: null
+  es: null
   proxy:
     external: true
