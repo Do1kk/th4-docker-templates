@@ -33,7 +33,11 @@ sudo docker-compose up -d
 ```
 sudo chmod -R u+rwX,go+rX,go-w vol
 ```
-
+### 3. Add index to elasticsearch (when thehive can't find it). 
+Prefix is in field "index-name: thehive" that is defined in thehive4 application.conf.
+```
+docker exec -it elasticsearch curl -XPUT 'localhost:9200/thehive_global'
+```
 
 ## Cassandra.
 ### 1. Check cassandra cluster.
