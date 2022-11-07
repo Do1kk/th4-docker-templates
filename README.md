@@ -9,7 +9,7 @@ https://localhost:2443
 https://localhost:8765
 
 ## Before "docker up".
-### 1. Update thehive.conf and cortex.conf files for nginx as appropriate.
+### 1. Update vol/nginx/thehive.conf and vol/nginx/cortex.conf files for nginx as appropriate.
 * Update server_name for your fqdn
 * Review/modify the configuration for your requirements
 
