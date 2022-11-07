@@ -10,7 +10,9 @@ https://localhost:8765
 
 ## Requirements
 CPU: >= 4 vCPUs
+
 Memory: >= 16 GB
+
 Hard disk: >= 40 GB
 
 Java 11 ```sudo apt install openjdk-11-jre-headless```
