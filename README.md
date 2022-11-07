@@ -8,6 +8,13 @@ https://localhost:2443
 ### n8n      
 https://localhost:8765
 
+## Requirements
+CPU: >= 4 vCPUs
+Memory: >= 16 GB
+Hard disk: >= 40 GB
+
+Java 11 ```sudo apt install openjdk-11-jre-headless```
+
 ## Initial configuration".
 ### 1. Update vol/nginx/thehive.conf and vol/nginx/cortex.conf files for nginx as appropriate.
 * Update server_name for your fqdn
@@ -27,14 +34,24 @@ sudo chmod -R u+rwX,go+rX,go-w vol  # set directories to 755 but files to 644
 ## Docker UP.
 ### 1. Analyze docker-compose.yml and run all images.
 ``` 
-sudo docker network create proxy
+sudo docker network create proxy # create external network for nginx
 sudo docker compose up -d
 ```
 ### 2. New file will be created.
 ```
+sudo chown -R 1000:1000 vol
 sudo chmod -R u+rwX,go+rX,go-w vol
 ```
-### 3. Add index to elasticsearch (when thehive can't find it). 
+### 3. Change "somekey" in vol/thehive/application.conf to api key from cortex
+
+### 4. Enable thehive in nginx
+add port 443 in nginx image in docker-compose.yaml
+rename vol/nginx/.thehive.conf to vol/nginx/thehive.conf
+```
+sudo docker compose restart
+```
+
+### 5. Add index to elasticsearch (when thehive can't find it). 
 Prefix is in field "index-name: thehive" that is defined in thehive4 application.conf.
 ```
 docker exec -it elasticsearch curl -XPUT 'localhost:9200/thehive_global'
@@ -44,6 +61,11 @@ docker exec -it elasticsearch curl -XPUT 'localhost:9200/thehive_global'
 ### 1. Check cassandra cluster.
 ```
 docker exec cass1 nodetool status
+```
+### 2. Restart nodes if needed.
+```
+sudo docker compose restart cass2
+sudo docker compose restart cass3
 ```
 
 ### 2. Repair cassandra datacenter. 

@@ -6,7 +6,7 @@ services:
     image: nginx:1.21.4
     ports:
       - 80:80
-      - 443:443
+#      - 443:443
       - 2443:2443
       - 8765:8765
     networks:
@@ -31,7 +31,7 @@ services:
       - gateway.recover_after_nodes=1
       - xpack.security.enabled=false
       - bootstrap.memory_lock=true
-      - ES_JAVA_OPTS=-Xms128m -Xmx128m # min 128m
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m # min 128m
     ulimits:
       nofile:
         soft: 65536
@@ -103,15 +103,15 @@ services:
     restart: unless-stopped
     hostname: cass1 # now we can write this name in thehive confguration insted of ip that is randomly created
     healthcheck: &healthcheck
-#        test: ["CMD", "cqlsh", "-e", "describe keyspaces" ] # without cridentials
-        test: ["CMD", "cqlsh", "-u", "${CASSANDRA_USER}", "-p", "${CASSANDRA_PASS}", "-e", "describe keyspaces" ]
-        interval: 10s # domyślnie 5s
-        timeout: 10s # domyślnie 5s
-        retries: 10 # domyślnie 60
+        test: ["CMD", "cqlsh", "-e", "describe keyspaces" ] # without cridentials
+#        test: ["CMD", "cqlsh", "-u", "${CASSANDRA_USER}", "-p", "${CASSANDRA_PASS}", "-e", "describe keyspaces" ]
+        interval: 10s # default 5s
+        timeout: 10s # default 5s
+        retries: 10 # default 60
     environment:
       CASSANDRA_SEEDS: "cass1,cass2"    # The first two nodes will be seeds
-      MAX_HEAP_SIZE: 1100M # min 256M
-      HEAP_NEWSIZE: 200M
+      MAX_HEAP_SIZE: 1300M # min 256M
+      HEAP_NEWSIZE: 300M
       CASSANDRA_CLUSTER_NAME: thp
       CASSANDRA_NUM_TOKENS: 128  # Virtual nodes. Machine with fewer resources could be configured to support a smaller number of virtual nodes.
       CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch  # Topology information that the replication strategy uses to place replicas.     
@@ -120,7 +120,7 @@ services:
       CASSANDRA_START_RPC: 'true'
     volumes:
       - './vol/cass1/data:/var/lib/cassandra/data'
-      - './vol/cass1/cassandra.yaml:/etc/cassandra/cassandra.yaml'
+#      - './vol/cass1/cassandra.yaml:/etc/cassandra/cassandra.yaml'
       - './vol/cert:/etc/cert' # folder with certificates for client and server encryption
     networks:
       - th4
@@ -133,8 +133,8 @@ services:
     healthcheck: *healthcheck
     environment: 
       CASSANDRA_SEEDS: "cass1,cass2"    # The first two nodes will be seeds
-      MAX_HEAP_SIZE: 1100M # min 256M
-      HEAP_NEWSIZE: 200M
+      MAX_HEAP_SIZE: 1300M # min 256M
+      HEAP_NEWSIZE: 300M
       CASSANDRA_CLUSTER_NAME: thp
       CASSANDRA_NUM_TOKENS: 128
       CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
@@ -143,7 +143,7 @@ services:
       CASSANDRA_START_RPC: 'true'
     volumes:
       - './vol/cass2/data:/var/lib/cassandra/data'
-      - './vol/cass2/cassandra.yaml:/etc/cassandra/cassandra.yaml'
+#      - './vol/cass2/cassandra.yaml:/etc/cassandra/cassandra.yaml'
       - './vol/cert:/etc/cert'
     networks:
       - th4
@@ -159,8 +159,8 @@ services:
     healthcheck: *healthcheck
     environment: 
       CASSANDRA_SEEDS: "cass1,cass2"    # The first two nodes will be seeds
-      MAX_HEAP_SIZE: 1100M # min 256M
-      HEAP_NEWSIZE: 200M
+      MAX_HEAP_SIZE: 1300M # min 256M
+      HEAP_NEWSIZE: 300M
       CASSANDRA_CLUSTER_NAME: thp
       CASSANDRA_NUM_TOKENS: 128
       CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
@@ -169,7 +169,7 @@ services:
       CASSANDRA_START_RPC: 'true'
     volumes:
       - './vol/cass3/data:/var/lib/cassandra/data'
-      - './vol/cass3/cassandra.yaml:/etc/cassandra/cassandra.yaml'
+#      - './vol/cass3/cassandra.yaml:/etc/cassandra/cassandra.yaml'
       - './vol/cert:/etc/cert'
     networks:
       - th4
@@ -193,7 +193,7 @@ services:
       - './vol/cert:/etc/cert'
     networks:
       - proxy
-      - backend
+      - th4
       - n8n-net
     command: '--no-config --no-config-secret'
 networks:
