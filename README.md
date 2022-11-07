@@ -8,14 +8,14 @@ https://localhost:2443
 ### n8n      
 https://localhost:8765
 
-## Before "docker up".
+## Initial configuration".
 ### 1. Update vol/nginx/thehive.conf and vol/nginx/cortex.conf files for nginx as appropriate.
 * Update server_name for your fqdn
 * Review/modify the configuration for your requirements
 
 ### 2. Your certificates.
 * Add your certificates to ./vol/ssl
-* Update ./vol/nginx/certs.conf with the certificate file names
+* Update ./vol/nginx/certs.conf with the certificate file names. "/etc/ssl/" must be unchanged because it is the path in docker volume.
 * Update .env with the CORTEX_KEY after Cortex has been setup and configured. A restart of TheHive node is required.
 
 ### 3. Accessibility setting on 'vol' dir.
@@ -27,7 +27,8 @@ sudo chmod -R u+rwX,go+rX,go-w vol  # set directories to 755 but files to 644
 ## Docker UP.
 ### 1. Analyze docker-compose.yml and run all images.
 ``` 
-sudo docker-compose up -d
+sudo docker network create proxy
+sudo docker compose up -d
 ```
 ### 2. New file will be created.
 ```
