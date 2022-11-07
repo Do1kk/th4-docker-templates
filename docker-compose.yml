@@ -105,9 +105,9 @@ services:
     healthcheck: &healthcheck
         test: ["CMD", "cqlsh", "-e", "describe keyspaces" ] # without cridentials
 #        test: ["CMD", "cqlsh", "-u", "${CASSANDRA_USER}", "-p", "${CASSANDRA_PASS}", "-e", "describe keyspaces" ]
-        interval: 10s # default 5s
-        timeout: 10s # default 5s
-        retries: 10 # default 60
+        interval: 15s # default 5s
+        timeout: 15s # default 5s
+        retries: 60 # default 60
     environment:
       CASSANDRA_SEEDS: "cass1,cass2"    # The first two nodes will be seeds
       MAX_HEAP_SIZE: 1300M # min 256M

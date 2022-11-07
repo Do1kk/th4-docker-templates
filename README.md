@@ -45,17 +45,17 @@ sudo chmod -R u+rwX,go+rX,go-w vol
 ### 3. Change "somekey" in vol/thehive/application.conf to api key from cortex
 
 ### 4. Enable thehive in nginx
-add port 443 in nginx image in docker-compose.yaml
+add port 443 to nginx image in docker-compose.yaml
 rename vol/nginx/.thehive.conf to vol/nginx/thehive.conf
 ```
 sudo docker compose restart
 ```
-
 ### 5. Add index to elasticsearch (when thehive can't find it). 
 Prefix is in field "index-name: thehive" that is defined in thehive4 application.conf.
 ```
 docker exec -it elasticsearch curl -XPUT 'localhost:9200/thehive_global'
 ```
+### 6. Delete cass1/2/3|thehive|elasticsearch data when you get some odd err in thehive logs
 
 ## Cassandra.
 ### 1. Check cassandra cluster.
